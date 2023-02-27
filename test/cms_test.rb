@@ -33,6 +33,10 @@ class CmsTest < Minitest::Test
     end
   end
 
+  def admin_session
+    { "rack.session" => { username: "admin" } }
+  end  
+
   def test_index
     create_document "about.md"
     create_document "changes.txt"
@@ -66,7 +70,7 @@ class CmsTest < Minitest::Test
   end  
 
   def test_file_not_found
-    get "/nofile"
+    get "/notafile.ext"
 
     assert_equal 302, last_response.status
     assert_equal "notafile.ext does not exist.", session[:message]
@@ -82,7 +86,7 @@ class CmsTest < Minitest::Test
   def test_edit_document
     create_document "changes.txt", "test content"
 
-    get "/changes.txt/edit"
+    get "/changes.txt/edit", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, "Edit content of changes.txt"
@@ -94,10 +98,10 @@ class CmsTest < Minitest::Test
   def test_save_changes
     create_document "changes.txt"
 
-    post "/changes.txt", content: "new content"
+    post "/changes.txt", {content: "new content"}, admin_session
     
     assert_equal 302, last_response.status
-    assert_equal "changes.txt has been updated", session[:message]
+    assert_equal "changes.txt has been updated.", session[:message]
 
     # get last_response["Location"]
     
@@ -109,7 +113,7 @@ class CmsTest < Minitest::Test
   end
 
   def test_view_new_document_form
-    get "/new"
+    get "/new", {}, admin_session
 
     assert_equal 200, last_response.status
     assert_includes last_response.body, "<input"
@@ -117,7 +121,8 @@ class CmsTest < Minitest::Test
   end
   
   def test_create_new_document
-    post "/create", filename: "test.txt"
+    
+    post "/create", {filename: "test.txt"}, admin_session
 
     assert_equal 302, last_response.status
     assert_equal "test.txt was created.", session[:message]   
@@ -130,13 +135,13 @@ class CmsTest < Minitest::Test
   end
   
   def test_create_new_document_invalid_filename
-    post "/create", filename: ""
+    post "/create", {filename: ""}, admin_session
     assert_includes last_response.body, "A name is required."
   
-    post "/create", filename: "testtxt"
+    post "/create", {filename: "testtxt"}, admin_session
     assert_includes last_response.body, "Name must end with .txt or .md"
   
-    post "/create", filename: "testmd"
+    post "/create", {filename: "testmd"}, admin_session
     assert_includes last_response.body, "Name must end with .txt or .md"
   end
 
@@ -147,7 +152,7 @@ class CmsTest < Minitest::Test
     get "/"
     assert_includes last_response.body, file_name
 
-    post "/#{file_name}/delete"
+    post "/#{file_name}/delete", {}, admin_session
     assert_equal 302, last_response.status
     assert_equal "#{file_name} has been deleted.", session[:message]
     # get last_response["Location"]
@@ -168,11 +173,11 @@ class CmsTest < Minitest::Test
   def test_sign_in
     post "/users/signin", username: "admin", password: "secret"
     assert_equal 302, last_response.status
+    assert_equal "Welcome!", session[:message]
 
     get last_response["Location"]
     assert_equal 200, last_response.status
     
-    assert_equal "Welcome!", session[:message]
     # assert_includes last_response.body, "Welcome!"
     assert_equal "admin", session[:username]
     assert_includes last_response.body, "Signed in as admin"

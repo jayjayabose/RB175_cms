@@ -2,15 +2,13 @@ require "sinatra"
 require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
-# require "fileutils"
-require "pry"
+require "pry" #remove 
 
 configure do
   enable :sessions
   # set :session_secret, 'super secret'
 end
 
-# cms.rb
 def data_path
   if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/data", __FILE__)
@@ -38,8 +36,18 @@ end
 
 def get_error_message(file_name)
   return "A name is required." if file_name.empty?
-  # return "Name must end with .txt or .md" unless file_name.match?(/(\.txt\z)|(\.md\z)/)
   return "Name must end with .txt or .md" unless ['.md', '.txt'].include? File.extname(file_name)
+end
+
+def user_signed_in?
+  session.key?(:username)
+end
+
+def require_signed_in_user
+  unless user_signed_in?
+    session[:message] = "You must be signed in to do that."
+    redirect "/"
+  end
 end
 
 # Display signin form
@@ -49,7 +57,6 @@ end
 
 # Handle user signin 
 post "/users/signin" do
-  binding.pry
   if params[:username] == "admin" && params[:password] == "secret"
     session[:username] = params[:username]
     session[:message] = "Welcome!"
@@ -70,12 +77,15 @@ end
 
 # Display new document form
 get "/new" do
+  require_signed_in_user
   erb :new
 end
 
 # Create new document 
 post "/create" do
-  file_name = params[:filename].to_s
+  require_signed_in_user
+
+  file_name = params[:filename].to_s  #why is to_s needed here?
 
   error_message = get_error_message(file_name)
   if error_message
@@ -92,6 +102,8 @@ post "/create" do
 end
 
 post "/:filename/delete" do
+  require_signed_in_user
+
   file_name = params[:filename]
   file_path = File.join(data_path, file_name)
   File.delete(file_path)
@@ -122,8 +134,10 @@ get "/:filename" do
   end
 end
 
-# Dipsplay file edit page
+# Display file edit page
 get "/:filename/edit" do
+  require_signed_in_user
+
   file_name = params[:filename]
   file_path = File.join(data_path, file_name)
 
@@ -131,7 +145,10 @@ get "/:filename/edit" do
   erb :edit
 end
 
+# Handle file edits
 post "/:filename" do
+  require_signed_in_user
+
   content = params[:content]
   file_name = params[:filename]
   file_path = File.join(data_path, file_name)
