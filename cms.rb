@@ -3,6 +3,7 @@ require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
 # require "fileutils"
+require "pry"
 
 configure do
   enable :sessions
@@ -48,6 +49,7 @@ end
 
 # Handle user signin 
 post "/users/signin" do
+  binding.pry
   if params[:username] == "admin" && params[:password] == "secret"
     session[:username] = params[:username]
     session[:message] = "Welcome!"
@@ -99,15 +101,11 @@ end
 
 # Display list of files
 get "/" do
-  # if session[:username].nil?
-  #   redirect "/users/signin"
-  # else
-    pattern = File.join(data_path, "*")
-    @files = Dir.glob(pattern).map do |full_path_name|
-      File.basename(full_path_name)
-    end
-    erb :index
-  # end
+  pattern = File.join(data_path, "*")
+  @files = Dir.glob(pattern).map do |full_path_name|
+    File.basename(full_path_name)
+  end
+  erb :index
 end
 
 #Display file contents
