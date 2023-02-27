@@ -1,5 +1,3 @@
 {
-  bill: billspassword,
-  sonia: soniaspassword,
-  developer: letmein
+  developer: $2a$12$XMX8JLi7HOUB/7QIQhbeq.FG8dvUW.jRsoF6GXNPuOG1TKe/bmgAi
 }

@@ -3,6 +3,7 @@ require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
 require "yaml"
+require "bcrypt"
 require "pry" #remove 
 
 configure do
@@ -62,7 +63,8 @@ end
 
 def valid_credentials?(username, password)
   user_credentials = load_user_credentials
-  return user_credentials[username] == password if user_credentials[username]
+  return BCrypt::Password.new(user_credentials[username]) == password if user_credentials[username]
+  # return user_credentials[username] == password if user_credentials[username]
   false
 end
 
