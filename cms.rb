@@ -2,6 +2,7 @@ require "sinatra"
 require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
+require "yaml"
 require "pry" #remove 
 
 configure do
@@ -50,6 +51,22 @@ def require_signed_in_user
   end
 end
 
+def load_user_credentials
+  credentials_path = if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/users.yml", __FILE__)
+  else
+    File.expand_path("../users.yml", __FILE__)
+  end
+  YAML.load_file(credentials_path)
+end
+
+def valid_credentials?(username, password)
+  user_credentials = load_user_credentials
+  return user_credentials[username] == password if user_credentials[username]
+  false
+end
+
+
 # Display signin form
 get "/users/signin" do
   erb :signin
@@ -57,7 +74,7 @@ end
 
 # Handle user signin 
 post "/users/signin" do
-  if params[:username] == "admin" && params[:password] == "secret"
+  if valid_credentials?(params[:username],params[:password] )
     session[:username] = params[:username]
     session[:message] = "Welcome!"
     redirect "/"
